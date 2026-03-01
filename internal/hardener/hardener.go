@@ -56,7 +56,10 @@ func (a *Assessor) CheckSudoers(ctx context.Context) ([]protocol.Finding, error)
 	files := []string{"/etc/sudoers"}
 	entries, err := os.ReadDir("/etc/sudoers.d")
 	if err != nil && !os.IsNotExist(err) {
-		return nil, fmt.Errorf("hardener: read /etc/sudoers.d: %w", err)
+		if !os.IsPermission(err) {
+			return nil, fmt.Errorf("hardener: read /etc/sudoers.d: %w", err)
+		}
+		logger.Warn(ctx, "skipping /etc/sudoers.d: permission denied")
 	}
 	for _, e := range entries {
 		if !e.IsDir() {

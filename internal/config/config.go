@@ -135,7 +135,7 @@ func Default() Config {
 			EventQueueSize:    64,
 		},
 		LLM: LLMConfig{
-			Endpoint:     "",
+			Endpoint:     "http://127.0.0.1:11434/api/mitiga/analyze",
 			Timeout:      10 * time.Second,
 			AdvisoryOnly: true,
 		},
