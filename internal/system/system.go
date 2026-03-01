@@ -9,6 +9,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -223,12 +224,24 @@ func (a *Auditor) CheckAuthorizedKeys(ctx context.Context) ([]protocol.Finding, 
 		if u.Home == "" || u.Home == "/" {
 			continue
 		}
-		keyFile := filepath.Join(u.Home, ".ssh", "authorized_keys")
-		data, err := os.ReadFile(keyFile)
-		if err != nil {
+		// Use os.OpenRoot to scope file access to the user's home directory,
+		// preventing directory traversal via a malicious home path.
+		homeRoot, oerr := os.OpenRoot(u.Home)
+		if oerr != nil {
 			continue
 		}
-		fmt.Fprintf(&combined, "=== user=%s uid=%d file=%s ===\n%s\n", u.Name, u.UID, keyFile, string(data))
+		f, ferr := homeRoot.Open(".ssh/authorized_keys")
+		homeRoot.Close()
+		if ferr != nil {
+			continue
+		}
+		data, rerr := io.ReadAll(f)
+		f.Close()
+		if rerr != nil {
+			continue
+		}
+		displayPath := filepath.Join(u.Home, ".ssh", "authorized_keys")
+		fmt.Fprintf(&combined, "=== user=%s uid=%d file=%s ===\n%s\n", u.Name, u.UID, displayPath, string(data))
 	}
 
 	if combined.Len() == 0 {

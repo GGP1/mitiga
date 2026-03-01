@@ -39,7 +39,6 @@ type Report struct {
 
 	// LLMInsights captures advisory recommendations returned by the local LLM.
 	LLMInsights []string `json:"llm_insights,omitempty"`
-
 }
 
 // Action records an automated action the agent performed.
@@ -61,13 +60,13 @@ var severityOrder = map[protocol.Severity]int{
 // New creates a new report with the given metadata.
 func New(id, agentID, hostname, reportType string) *Report {
 	return &Report{
-		ID:        id,
-		AgentID:   agentID,
-		Hostname:  hostname,
-		Timestamp: time.Now().UTC(),
-		Type:      reportType,
-		Findings:  make([]protocol.Finding, 0),
-		Actions:   make([]Action, 0),
+		ID:          id,
+		AgentID:     agentID,
+		Hostname:    hostname,
+		Timestamp:   time.Now().UTC(),
+		Type:        reportType,
+		Findings:    make([]protocol.Finding, 0),
+		Actions:     make([]Action, 0),
 		LLMInsights: make([]string, 0),
 	}
 }
@@ -142,7 +141,7 @@ func (r *Report) WriteJSON(ctx context.Context, outputDir string) (string, error
 		return "", fmt.Errorf("report: marshal JSON: %w", err)
 	}
 
-	if err := os.WriteFile(path, data, 0o640); err != nil {
+	if err := os.WriteFile(path, data, 0o600); err != nil {
 		return "", fmt.Errorf("report: write file %q: %w", path, err)
 	}
 
@@ -219,7 +218,7 @@ func (r *Report) WriteMarkdown(ctx context.Context, outputDir string) (string, e
 		sb.WriteString("\n")
 	}
 
-	if err := os.WriteFile(path, []byte(sb.String()), 0o640); err != nil {
+	if err := os.WriteFile(path, []byte(sb.String()), 0o600); err != nil {
 		return "", fmt.Errorf("report: write file %q: %w", path, err)
 	}
 

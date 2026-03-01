@@ -54,7 +54,7 @@ func (v *Verifier) ComputeChecksum(ctx context.Context, path string, algo Algori
 		"algorithm", string(algo),
 	)
 
-	f, err := os.Open(path)
+	f, err := os.Open(path) // #nosec G304 -- computing checksums of arbitrary file paths is this function's explicit purpose; callers are responsible for path validation
 	if err != nil {
 		return "", fmt.Errorf("verify: open %s: %w", path, err)
 	}

@@ -47,8 +47,8 @@ func Setup(logFile, logLevel, logOutput string) (cleanup func(), err error) {
 		return nil, fmt.Errorf("logger: create log directory %q: %w", logDir, err)
 	}
 
-	// Open the mandatory log file (append-only).
-	f, err := os.OpenFile(logFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o640)
+	// Open the mandatory log file (append-only, owner-only permissions).
+	f, err := os.OpenFile(logFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600) // #nosec G304 -- path is operator-supplied via config, not user input
 	if err != nil {
 		return nil, fmt.Errorf("logger: open log file %q: %w", logFile, err)
 	}

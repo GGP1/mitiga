@@ -126,7 +126,7 @@ func (e *Executor) Run(ctx context.Context, command string, args ...string) Comm
 	)
 
 	// Build command with explicit argument list — no shell interpolation.
-	cmd := exec.CommandContext(execCtx, command, args...)
+	cmd := exec.CommandContext(execCtx, command, args...) // #nosec G204 -- command validated against skills allowlist; explicit args, no shell
 
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout

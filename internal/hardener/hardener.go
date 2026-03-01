@@ -3,6 +3,7 @@ package hardener
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -53,31 +54,48 @@ func (a *Assessor) AssessBaseline(ctx context.Context) ([]protocol.Finding, erro
 func (a *Assessor) CheckSudoers(ctx context.Context) ([]protocol.Finding, error) {
 	ctx = logger.WithComponent(ctx, "hardener")
 
-	files := []string{"/etc/sudoers"}
-	entries, err := os.ReadDir("/etc/sudoers.d")
-	if err != nil && !os.IsNotExist(err) {
-		if !os.IsPermission(err) {
-			return nil, fmt.Errorf("hardener: read /etc/sudoers.d: %w", err)
-		}
-		logger.Warn(ctx, "skipping /etc/sudoers.d: permission denied")
+	// Scope all reads to /etc to prevent directory traversal.
+	etcRoot, err := os.OpenRoot("/etc")
+	if err != nil {
+		return nil, fmt.Errorf("hardener: open /etc: %w", err)
 	}
-	for _, e := range entries {
-		if !e.IsDir() {
-			files = append(files, filepath.Join("/etc/sudoers.d", e.Name()))
-		}
-	}
+	defer etcRoot.Close()
 
 	if a.subAgent == nil {
 		return nil, nil
 	}
 
 	var combined strings.Builder
-	for _, path := range files {
-		data, err := os.ReadFile(path)
-		if err != nil {
-			continue
+
+	// Read /etc/sudoers.
+	if f, ferr := etcRoot.Open("sudoers"); ferr == nil {
+		if data, rerr := io.ReadAll(f); rerr == nil {
+			fmt.Fprintf(&combined, "=== /etc/sudoers ===\\n%s\\n", string(data))
 		}
-		fmt.Fprintf(&combined, "=== %s ===\\n%s\\n", path, string(data))
+		f.Close()
+	}
+
+	// Read /etc/sudoers.d/*.
+	if dir, derr := etcRoot.Open("sudoers.d"); derr == nil {
+		entries, _ := dir.ReadDir(-1)
+		dir.Close()
+		for _, e := range entries {
+			if !e.IsDir() {
+				rel := filepath.Join("sudoers.d", e.Name())
+				if f, ferr := etcRoot.Open(rel); ferr == nil {
+					if data, rerr := io.ReadAll(f); rerr == nil {
+						fmt.Fprintf(&combined, "=== /etc/%s ===\\n%s\\n", rel, string(data))
+					}
+					f.Close()
+				}
+			}
+		}
+	} else if !os.IsNotExist(derr) {
+		if os.IsPermission(derr) {
+			logger.Warn(ctx, "skipping /etc/sudoers.d: permission denied")
+		} else {
+			return nil, fmt.Errorf("hardener: open /etc/sudoers.d: %w", derr)
+		}
 	}
 
 	if combined.Len() == 0 {
@@ -96,30 +114,46 @@ func (a *Assessor) CheckSudoers(ctx context.Context) ([]protocol.Finding, error)
 func (a *Assessor) CheckCronJobs(ctx context.Context) ([]protocol.Finding, error) {
 	ctx = logger.WithComponent(ctx, "hardener")
 
-	cronFiles := []string{"/etc/crontab"}
-	for _, dir := range []string{"/etc/cron.d", "/etc/cron.hourly", "/etc/cron.daily", "/etc/cron.weekly", "/etc/cron.monthly"} {
-		entries, err := os.ReadDir(dir)
-		if err != nil {
-			continue
-		}
-		for _, e := range entries {
-			if !e.IsDir() {
-				cronFiles = append(cronFiles, filepath.Join(dir, e.Name()))
-			}
-		}
+	// Scope all reads to /etc to prevent directory traversal.
+	etcRoot, err := os.OpenRoot("/etc")
+	if err != nil {
+		return nil, fmt.Errorf("hardener: open /etc: %w", err)
 	}
+	defer etcRoot.Close()
 
 	if a.subAgent == nil {
 		return nil, nil
 	}
 
 	var combined strings.Builder
-	for _, path := range cronFiles {
-		data, err := os.ReadFile(path)
-		if err != nil {
+
+	// Read /etc/crontab.
+	if f, ferr := etcRoot.Open("crontab"); ferr == nil {
+		if data, rerr := io.ReadAll(f); rerr == nil {
+			fmt.Fprintf(&combined, "=== /etc/crontab ===\\n%s\\n", string(data))
+		}
+		f.Close()
+	}
+
+	// Read per-directory cron files.
+	for _, dir := range []string{"cron.d", "cron.hourly", "cron.daily", "cron.weekly", "cron.monthly"} {
+		d, derr := etcRoot.Open(dir)
+		if derr != nil {
 			continue
 		}
-		fmt.Fprintf(&combined, "=== %s ===\\n%s\\n", path, string(data))
+		entries, _ := d.ReadDir(-1)
+		d.Close()
+		for _, e := range entries {
+			if !e.IsDir() {
+				rel := filepath.Join(dir, e.Name())
+				if f, ferr := etcRoot.Open(rel); ferr == nil {
+					if data, rerr := io.ReadAll(f); rerr == nil {
+						fmt.Fprintf(&combined, "=== /etc/%s ===\\n%s\\n", rel, string(data))
+					}
+					f.Close()
+				}
+			}
+		}
 	}
 
 	if combined.Len() == 0 {

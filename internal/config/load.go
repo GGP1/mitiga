@@ -10,7 +10,7 @@ import (
 // LoadFromFile reads a TOML configuration file and decodes it into cfg.
 // Fields not present in the file retain their current values (typically defaults).
 func LoadFromFile(path string, cfg *Config) error {
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) // #nosec G304 -- config file path is operator-supplied (CLI flag), not user-controlled input
 	if err != nil {
 		return fmt.Errorf("config: read file %q: %w", path, err)
 	}

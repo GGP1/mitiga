@@ -11,7 +11,8 @@ import (
 	"github.com/GGP1/mitiga/pkg/protocol"
 )
 
-const secretPattern = `(AKIA[0-9A-Z]{16}|-----BEGIN (RSA|EC|OPENSSH) PRIVATE KEY-----|password[[:space:]]*=[[:space:]]*["'][^"']+["'])`
+// secretPattern is a regex used to detect potential secrets in source code — not an actual credential.
+const secretPattern = `(AKIA[0-9A-Z]{16}|-----BEGIN (RSA|EC|OPENSSH) PRIVATE KEY-----|password[[:space:]]*=[[:space:]]*["'][^"']+["'])` // #nosec G101 -- detection pattern, not a real credential
 
 // Auditor performs conservative source code security checks.
 type Auditor struct {
