@@ -1,0 +1,17 @@
+# Binary
+/mitiga
+
+# Test output
+*.test
+coverage.out
+coverage.html
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

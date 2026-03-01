@@ -1,0 +1,42 @@
+# Mitiga Agent Configuration
+# See .github/copilot-instructions.md §6 for the layered configuration model.
+#
+# Precedence (highest to lowest):
+#   CLI flags > Environment variables (MITIGA_*) > This file > Hardcoded defaults
+
+[agent]
+id = ""                                    # Auto-generated from certificate fingerprint if empty
+log_level = "info"                         # debug, info, warn, error
+log_output = "stdout"                      # stdout, stderr, none
+log_file = "/var/log/mitiga/mitiga.log"    # Mandatory — authoritative audit trail
+
+[security]
+auto_remediate = false                     # Never auto-remediate unless explicitly enabled
+max_command_timeout = "60s"                # Maximum duration for any executed command
+require_manager_approval = true            # Require system manager confirmation for impactful actions
+
+[runtime]
+scan_interval = "30s"                     # Periodic full scan cadence
+event_poll_interval = "5s"                # Filesystem-watch polling interval
+heartbeat_interval = "60s"                # Daemon heartbeat log interval
+watch_paths = ["/etc", "/usr/local/bin", "/var/lib/mitiga"]
+state_file = "/var/lib/mitiga/state.json" # Persisted agent snapshot (survives restarts)
+event_queue_size = 64                     # Bounded event queue capacity; producers drop on overflow
+
+[llm]
+endpoint = "http://127.0.0.1:11434/api/mitiga/analyze"  # Local (e.g. Ollama) or external (e.g. https://openrouter.ai/api/v1/chat/completions)
+api_key = ""                                            # Bearer token — required for external providers (e.g. OpenRouter API key), leave empty for local
+findings_model = "llama3:latest"           # Model used by all security module sub-agents to produce findings
+advisory_model = "llama3:latest"           # Model used for the post-scan holistic advisory
+timeout = "10s"
+advisory_only = true                       # LLM output is recommendations only (no execution)
+
+[scan]
+default_port_range = "1-65535"
+scan_timeout = "120s"
+max_concurrent_scans = 4
+
+[report]
+output_dir = "/var/lib/mitiga/reports"
+format = "json"                            # json, markdown, html
+retention_days = 90
