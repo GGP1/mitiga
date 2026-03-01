@@ -55,6 +55,7 @@ jobs:
         with:
           go-version-file: go.mod
           go-package: ./...
+          repo-checkout: false
 
       - name: Run Gosec Security Scanner
         uses: securego/gosec@master
