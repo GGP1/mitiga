@@ -231,12 +231,12 @@ func (a *Auditor) CheckAuthorizedKeys(ctx context.Context) ([]protocol.Finding, 
 			continue
 		}
 		f, ferr := homeRoot.Open(".ssh/authorized_keys")
-		homeRoot.Close()
+		_ = homeRoot.Close()
 		if ferr != nil {
 			continue
 		}
 		data, rerr := io.ReadAll(f)
-		f.Close()
+		_ = f.Close()
 		if rerr != nil {
 			continue
 		}

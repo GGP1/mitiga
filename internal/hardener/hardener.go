@@ -72,13 +72,13 @@ func (a *Assessor) CheckSudoers(ctx context.Context) ([]protocol.Finding, error)
 		if data, rerr := io.ReadAll(f); rerr == nil {
 			fmt.Fprintf(&combined, "=== /etc/sudoers ===\\n%s\\n", string(data))
 		}
-		f.Close()
+		_ = f.Close()
 	}
 
 	// Read /etc/sudoers.d/*.
 	if dir, derr := etcRoot.Open("sudoers.d"); derr == nil {
 		entries, _ := dir.ReadDir(-1)
-		dir.Close()
+		_ = dir.Close()
 		for _, e := range entries {
 			if !e.IsDir() {
 				rel := filepath.Join("sudoers.d", e.Name())
@@ -86,7 +86,7 @@ func (a *Assessor) CheckSudoers(ctx context.Context) ([]protocol.Finding, error)
 					if data, rerr := io.ReadAll(f); rerr == nil {
 						fmt.Fprintf(&combined, "=== /etc/%s ===\\n%s\\n", rel, string(data))
 					}
-					f.Close()
+					_ = f.Close()
 				}
 			}
 		}
@@ -132,7 +132,7 @@ func (a *Assessor) CheckCronJobs(ctx context.Context) ([]protocol.Finding, error
 		if data, rerr := io.ReadAll(f); rerr == nil {
 			fmt.Fprintf(&combined, "=== /etc/crontab ===\\n%s\\n", string(data))
 		}
-		f.Close()
+		_ = f.Close()
 	}
 
 	// Read per-directory cron files.
@@ -142,7 +142,7 @@ func (a *Assessor) CheckCronJobs(ctx context.Context) ([]protocol.Finding, error
 			continue
 		}
 		entries, _ := d.ReadDir(-1)
-		d.Close()
+		_ = d.Close()
 		for _, e := range entries {
 			if !e.IsDir() {
 				rel := filepath.Join(dir, e.Name())
@@ -150,7 +150,7 @@ func (a *Assessor) CheckCronJobs(ctx context.Context) ([]protocol.Finding, error
 					if data, rerr := io.ReadAll(f); rerr == nil {
 						fmt.Fprintf(&combined, "=== /etc/%s ===\\n%s\\n", rel, string(data))
 					}
-					f.Close()
+					_ = f.Close()
 				}
 			}
 		}
